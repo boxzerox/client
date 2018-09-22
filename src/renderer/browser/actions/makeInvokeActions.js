@@ -1,33 +1,37 @@
 import { createActions } from 'spunky';
 import { wallet, api } from '@cityofzion/neon-js';
-import { isArray, mapKeys } from 'lodash';
+import { mapKeys } from 'lodash';
 
 import createScript from 'shared/util/createScript';
 import formatAssets from 'shared/util/formatAssets';
 import { ASSETS } from 'shared/values/assets';
 
 import generateDAppActionId from './generateDAppActionId';
+import validateInvokeArgs from '../util/validateInvokeArgs';
 
 export const ID = 'invoke';
 
-async function doInvoke({ net, address, wif, scriptHash, operation, args, encodeArgs, assets }) {
-  if (!wallet.isScriptHash(scriptHash)) {
-    throw new Error(`Invalid script hash: "${scriptHash}"`);
-  }
-
-  if (typeof operation !== 'string') {
-    throw new Error(`Invalid operation: "${operation}"`);
-  }
-
-  if (!isArray(args)) {
-    throw new Error(`Invalid arguments: "${args}"`);
-  }
+async function doInvoke({
+  net,
+  address,
+  wif,
+  publicKey,
+  signingFunction,
+  scriptHash,
+  operation,
+  args,
+  encodeArgs,
+  assets
+}) {
+  validateInvokeArgs({ scriptHash, operation, args, assets });
 
   const config = {
     net,
     address,
     script: createScript(scriptHash, operation, args, encodeArgs),
     privateKey: wif,
+    publicKey,
+    signingFunction,
     gas: 0
   };
 
@@ -53,12 +57,23 @@ export default function makeInvokeActions(sessionId, requestId) {
     net,
     address,
     wif,
+    publicKey,
+    signingFunction,
     scriptHash,
     operation,
     args,
     assets,
     encodeArgs = true
-  }) => () => {
-    return doInvoke({ net, address, wif, scriptHash, operation, args, assets, encodeArgs });
-  });
+  }) => () => doInvoke({
+    net,
+    address,
+    wif,
+    publicKey,
+    signingFunction,
+    scriptHash,
+    operation,
+    args,
+    assets,
+    encodeArgs
+  }));
 }
