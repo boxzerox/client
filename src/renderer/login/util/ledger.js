@@ -96,7 +96,7 @@ export default class NeonLedger {
     }
   }
 
-  async getPublicKey(acct) {
+  async getPublicKey(acct = 0) {
     const res = await this.send('80040000', BIP44(acct), [VALID_STATUS]);
     return res.toString('hex').substring(0, 130);
   }
@@ -123,7 +123,7 @@ export default class NeonLedger {
     }
   }
 
-  async getSignature(data, acct) {
+  async getSignature(data, acct = 0) {
     const formattedData = data + BIP44(acct);
     let response = null;
     const chunks = formattedData.match(/.{1,510}/g) || [];
@@ -152,7 +152,7 @@ export default class NeonLedger {
   }
 }
 
-export const getPublicKey = async (acct) => {
+export const getPublicKey = async (acct = 0) => {
   const ledger = await NeonLedger.init();
 
   try {
@@ -172,7 +172,7 @@ export const getDeviceInfo = async () => {
   }
 };
 
-export const signWithLedger = async (unsignedTx, acct) => {
+export const signWithLedger = async (unsignedTx, acct = 0) => {
   const ledger = await NeonLedger.init();
 
   try {
@@ -190,19 +190,19 @@ export const signWithLedger = async (unsignedTx, acct) => {
   }
 };
 
-// export const legacySignWithLedger = async (unsignedTx, publicKeyEncoded, acct) => {
-//   const ledger = await NeonLedger.init();
-//
-//   try {
-//     const data = typeof unsignedTx !== 'string' ?
-//       tx.serializeTransaction(unsignedTx, false) :
-//       unsignedTx;
-//     const invocationScript = `40${await ledger.getSignature(data, acct)}`;
-//     const verificationScript = wallet.getVerificationScriptFromPublicKey(publicKeyEncoded);
-//     const txObj = tx.deserializeTransaction(data);
-//     txObj.scripts.push({ invocationScript, verificationScript });
-//     return tx.serializeTransaction(txObj);
-//   } finally {
-//     await ledger.close();
-//   }
-// };
+export const legacySignWithLedger = async (unsignedTx, publicKeyEncoded, acct = 0) => {
+  const ledger = await NeonLedger.init();
+
+  try {
+    const data = typeof unsignedTx !== 'string'
+      ? tx.serializeTransaction(unsignedTx, false)
+      : unsignedTx;
+    const invocationScript = `40${await ledger.getSignature(data, acct)}`;
+    const verificationScript = wallet.getVerificationScriptFromPublicKey(publicKeyEncoded);
+    const txObj = tx.deserializeTransaction(data);
+    txObj.scripts.push({ invocationScript, verificationScript });
+    return tx.serializeTransaction(txObj);
+  } finally {
+    await ledger.close();
+  }
+};
